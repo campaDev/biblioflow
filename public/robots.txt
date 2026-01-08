@@ -1,5 +1,19 @@
+# Bloquear a IAs que copian contenido (Opcional, pero recomendado hoy en día)
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+# Reglas para Google y Bing
 User-agent: *
-    Allow: /
-    Disallow: /admin/
-    
-    Sitemap: https://biblioflow.com.py/sitemap-index.xml
+Allow: /
+Allow: /libros/
+Allow: /categorias/
+
+# PROHIBIDO indexar el admin (Seguridad por oscuridad básica)
+Disallow: /admin/
+Disallow: /_actions/
+
+# Mapa del sitio (Astro lo generará aquí si usas la integración @astrojs/sitemap)
+Sitemap: https://tusitio.com/sitemap-index.xml
