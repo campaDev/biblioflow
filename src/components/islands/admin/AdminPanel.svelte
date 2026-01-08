@@ -187,6 +187,30 @@
         isUpdatingOrder = false;
     }
   }
+
+  // Función para copiar respuesta al portapapeles
+  function copyPaymentResponse() {
+    if (!selectedOrder) return;
+    
+    const text = `Hola *${selectedOrder.customer_name}*! 👋
+Recibimos tu pedido *#${selectedOrder.id.slice(0,6)}*.
+
+📚 *Resumen:*
+${selectedOrder.cart_snapshot.map((i:any) => `• ${i.quantity}x ${i.title}`).join('\n')}
+
+💰 *Total a pagar: ${formatPrice(selectedOrder.total_amount)}*
+
+💳 *Datos para transferencia:*
+Banco: [TU BANCO]
+Titular: [TU NOMBRE]
+CI/RUC: [TU NUMERO]
+Cuenta: [TU CUENTA]
+
+📸 Por favor envíame el comprobante por aquí para preparar tu paquete. ¡Gracias!`;
+
+    navigator.clipboard.writeText(text);
+    alert("¡Texto copiado! Pégalo en WhatsApp.");
+  }
 </script>
 
 <div class="flex flex-col sm:flex-row gap-4 mb-8 border-b border-brand-ink/10 justify-between items-end sm:items-center pb-2">
@@ -310,7 +334,7 @@
                     <div class="flex items-center gap-4 shrink-0">
                         <div class="flex items-center bg-paper-surface border border-brand-ink/10 rounded-sm h-8">
                             <button class="w-8 h-full flex items-center justify-center hover:bg-brand-ink/10 disabled:opacity-30" onclick={() => updateStock(product.id, Math.max(0, product.stock_qty - 1))} disabled={product.stock_qty <= 0} aria-label="Disminuir stock">-</button>
-                            <input type="number" class="w-10 text-center bg-transparent text-sm font-bold focus:outline-none" value={product.stock_qty} disabled />
+                            <input type="number" class="w-10 text-center bg-transparent text-sm font-bold focus:outline-none" value={product.stock_qty} disabled aria-label="Cantidad de stock" />
                             <button class="w-8 h-full flex items-center justify-center hover:bg-brand-ink/10" onclick={() => updateStock(product.id, product.stock_qty + 1)} aria-label="Aumentar stock">+</button>
                         </div>
                         <div class="flex items-center gap-1 border-l border-brand-ink/10 pl-4">
@@ -330,7 +354,15 @@
 </div>
 
 {#if isModalOpen}
-    <div class="fixed inset-0 bg-brand-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" transition:fade={{ duration: 200 }}>
+    <div 
+        class="fixed inset-0 bg-brand-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" 
+        transition:fade={{ duration: 200 }}
+        role="dialog"
+        aria-modal="true"
+        tabindex="-1"
+        onkeydown={(e) => e.key === 'Escape' && (isModalOpen = false)}
+        onclick={(e) => { if(e.target === e.currentTarget) isModalOpen = false }}
+    >
         <div class="bg-paper-base w-full max-w-lg rounded-sm shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" transition:fly={{ y: 20, duration: 300 }}>
             <div class="p-6 border-b border-brand-ink/10 flex justify-between items-center bg-paper-surface">
                 <h3 class="font-serif font-bold text-xl text-brand-ink">{isEditing ? 'Editar Libro' : 'Nuevo Libro'}</h3>
@@ -340,7 +372,7 @@
             <div class="p-6 overflow-y-auto space-y-5">
                 {#if isEditing}
                     <div class="p-3 bg-brand-ink/5 rounded-sm border border-brand-ink/10">
-                        <label class="block text-xs font-bold text-brand-ink mb-2 uppercase tracking-wider">Estado</label>
+                        <span class="block text-xs font-bold text-brand-ink mb-2 uppercase tracking-wider">Estado</span>
                         <div class="flex gap-4">
                             {#each ['active', 'draft', 'archived'] as status}
                                 <label class="flex items-center gap-2 cursor-pointer group capitalize">
@@ -351,52 +383,71 @@
                         </div>
                     </div>
                 {/if}
+                
                 <div>
-                    <label class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Título *</label>
-                    <input type="text" bind:value={formData.title} class="w-full border border-brand-ink/20 p-2.5 rounded-sm focus:border-accent-gold outline-none" />
+                    <label class="block">
+                        <span class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Título *</span>
+                        <input type="text" bind:value={formData.title} class="w-full border border-brand-ink/20 p-2.5 rounded-sm focus:border-accent-gold outline-none" />
+                    </label>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Autor *</label>
-                        <input type="text" bind:value={formData.author} class="w-full border border-brand-ink/20 p-2.5 rounded-sm focus:border-accent-gold outline-none" />
+                        <label class="block">
+                            <span class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Autor *</span>
+                            <input type="text" bind:value={formData.author} class="w-full border border-brand-ink/20 p-2.5 rounded-sm focus:border-accent-gold outline-none" />
+                        </label>
                     </div>
                     <div>
-                         <label class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Idioma</label>
-                         <select bind:value={formData.language} class="w-full border border-brand-ink/20 p-2.5 rounded-sm bg-white focus:border-accent-gold outline-none">
-                             <option value="es">🇪🇸 Español</option>
-                             <option value="en">🇺🇸 Inglés</option>
-                             <option value="pt">🇧🇷 Portugués</option>
-                         </select>
+                         <label class="block">
+                             <span class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Idioma</span>
+                             <select bind:value={formData.language} class="w-full border border-brand-ink/20 p-2.5 rounded-sm bg-white focus:border-accent-gold outline-none">
+                                 <option value="es">🇪🇸 Español</option>
+                                 <option value="en">🇺🇸 Inglés</option>
+                                 <option value="pt">🇧🇷 Portugués</option>
+                             </select>
+                         </label>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Precio Lista *</label>
-                        <input type="number" bind:value={formData.price} class="w-full border border-brand-ink/20 p-2.5 rounded-sm focus:border-accent-gold outline-none" />
+                        <label class="block">
+                            <span class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Precio Lista *</span>
+                            <input type="number" bind:value={formData.price} class="w-full border border-brand-ink/20 p-2.5 rounded-sm focus:border-accent-gold outline-none" />
+                        </label>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-accent-gold mb-1 uppercase tracking-wider flex justify-between"><span>Precio Oferta</span><span class="text-[10px] opacity-70 font-normal">Opcional</span></label>
-                        <input type="number" bind:value={formData.promotional_price} class="w-full border border-accent-gold/30 bg-accent-gold/5 p-2.5 rounded-sm focus:border-accent-gold outline-none" placeholder="Ej: 150000" />
+                        <label class="block">
+                            <span class="block text-xs font-bold text-accent-gold mb-1 uppercase tracking-wider flex justify-between">
+                                <span>Precio Oferta</span><span class="text-[10px] opacity-70 font-normal">Opcional</span>
+                            </span>
+                            <input type="number" bind:value={formData.promotional_price} class="w-full border border-accent-gold/30 bg-accent-gold/5 p-2.5 rounded-sm focus:border-accent-gold outline-none" placeholder="Ej: 150000" />
+                        </label>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                      <div>
-                        <label class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Stock</label>
-                        <input type="number" bind:value={formData.stock_qty} class="w-full border border-brand-ink/20 p-2.5 rounded-sm focus:border-accent-gold outline-none" />
+                        <label class="block">
+                            <span class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Stock</span>
+                            <input type="number" bind:value={formData.stock_qty} class="w-full border border-brand-ink/20 p-2.5 rounded-sm focus:border-accent-gold outline-none" />
+                        </label>
                      </div>
                      <div>
-                         <label class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Categoría</label>
-                         <select bind:value={formData.category_id} class="w-full border border-brand-ink/20 p-2.5 rounded-sm bg-white focus:border-accent-gold outline-none">
-                             {#each categories as cat} <option value={cat.id}>{cat.name}</option> {/each}
-                         </select>
+                         <label class="block">
+                             <span class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Categoría</span>
+                             <select bind:value={formData.category_id} class="w-full border border-brand-ink/20 p-2.5 rounded-sm bg-white focus:border-accent-gold outline-none">
+                                 {#each categories as cat} <option value={cat.id}>{cat.name}</option> {/each}
+                             </select>
+                         </label>
                      </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Sinopsis</label>
-                    <textarea bind:value={formData.description} rows="3" class="w-full border border-brand-ink/20 p-2.5 rounded-sm focus:border-accent-gold outline-none resize-none"></textarea>
+                    <label class="block">
+                        <span class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Sinopsis</span>
+                        <textarea bind:value={formData.description} rows="3" class="w-full border border-brand-ink/20 p-2.5 rounded-sm focus:border-accent-gold outline-none resize-none"></textarea>
+                    </label>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Portada</label>
+                    <span class="block text-xs font-bold text-brand-ink mb-1 uppercase tracking-wider">Portada</span>
                     <div class="flex items-start gap-4">
                         <div class="w-20 h-28 bg-gray-100 border border-brand-ink/10 rounded-sm overflow-hidden relative shrink-0 flex items-center justify-center">
                             {#if isUploading} <div class="animate-spin h-5 w-5 border-2 border-brand-ink/20 border-t-brand-ink rounded-full"></div>
@@ -404,7 +455,10 @@
                             {:else} <span class="text-xs text-brand-ink/30 px-1">Sin foto</span> {/if}
                         </div>
                         <div class="flex-1">
-                            <input type="file" accept="image/*" onchange={handleImageUpload} disabled={isUploading} class="block w-full text-xs text-brand-ink/70 file:mr-2 file:py-2 file:px-4 file:rounded-sm file:border-0 file:bg-brand-ink/5 hover:file:bg-brand-ink/10 cursor-pointer" />
+                            <label class="block">
+                                <span class="sr-only">Subir imagen de portada</span>
+                                <input type="file" accept="image/*" onchange={handleImageUpload} disabled={isUploading} class="block w-full text-xs text-brand-ink/70 file:mr-2 file:py-2 file:px-4 file:rounded-sm file:border-0 file:bg-brand-ink/5 hover:file:bg-brand-ink/10 cursor-pointer" />
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -423,14 +477,15 @@
     <div 
         class="fixed inset-0 bg-brand-ink/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4" 
         transition:fade={{ duration: 200 }}
-        onclick={() => isOrderModalOpen = false}
         role="dialog"
         aria-modal="true"
+        tabindex="-1"
+        onkeydown={(e) => e.key === 'Escape' && (isOrderModalOpen = false)}
+        onclick={(e) => { if(e.target === e.currentTarget) isOrderModalOpen = false }}
     >
         <div 
             class="bg-paper-base w-full max-w-md rounded-sm shadow-2xl overflow-hidden relative"
             transition:fly={{ y: 20, duration: 300 }}
-            onclick={(e) => e.stopPropagation()} 
         >
             <div class="bg-brand-ink p-6 text-white relative overflow-hidden">
                 <div class="absolute top-0 right-0 p-4 opacity-10 rotate-12">
@@ -441,6 +496,7 @@
                 
                 <div class="mt-4 flex items-center gap-3">
                     <div class="relative group">
+                        <label class="sr-only">Cambiar estado del pedido</label>
                         <select 
                             value={selectedOrder.status} 
                             onchange={(e) => handleChangeStatus(e.currentTarget.value)}
@@ -475,7 +531,7 @@
                     </span>
                 </div>
 
-                <button onclick={() => isOrderModalOpen = false} class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+                <button onclick={() => isOrderModalOpen = false} class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors" aria-label="Cerrar detalle">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
@@ -522,6 +578,23 @@
                         <span class="font-bold text-brand-ink">Total General</span>
                         <span class="font-serif text-xl font-bold text-brand-ink">{formatPrice(selectedOrder.total_amount)}</span>
                     </div>
+
+                    <div class="mt-6 bg-brand-ink/5 p-4 rounded-sm border border-brand-ink/10">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="text-xs font-bold text-brand-ink uppercase tracking-wider">Respuesta Rápida</h4>
+                            <button 
+                                onclick={copyPaymentResponse}
+                                class="text-xs font-bold text-brand-ink/60 hover:text-brand-ink flex items-center gap-1 transition-colors"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                Copiar Texto
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-brand-ink/50 font-mono leading-relaxed bg-white p-2 rounded border border-brand-ink/5 truncate">
+                            Hola {selectedOrder.customer_name}! Recibimos tu pedido #{selectedOrder.id.slice(0,6)}. Total: {formatPrice(selectedOrder.total_amount)}. Datos para transfe...
+                        </p>
+                    </div>
+
                 </div>
             </div>
 

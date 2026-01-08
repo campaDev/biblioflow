@@ -16,4 +16,4 @@ Disallow: /admin/
 Disallow: /_actions/
 
 # Mapa del sitio (Astro lo generará aquí si usas la integración @astrojs/sitemap)
-Sitemap: https://tusitio.com/sitemap-index.xml
+Sitemap: https://campa.dev/sitemap-index.xml
