@@ -1,0 +1,100 @@
+/* src/styles/global.css */
+
+/* 1. FUENTES (Mantengo tus rutas originales) */
+@font-face {
+  font-family: "Playfair Display";
+  src: url("/fonts/playfair-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Playfair Display";
+  src: url("/fonts/playfair-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@import "tailwindcss";
+
+@theme {
+  /* 2. COLORES (Corregidos para coincidir con los componentes) */
+  /* El problema era que faltaba 'paper-surface' */
+  --color-paper-base: oklch(98% 0.01 70);
+  --color-paper-surface: oklch(94% 0.02 70); /* <--- FALTABA ESTE */
+  --color-paper-dark: oklch(
+    85% 0.02 70
+  ); /* Oscurecí un poco este para bordes */
+
+  --color-ink-deep: oklch(25% 0.02 250);
+  --color-brand-ink: oklch(45% 0.12 250);
+  --color-accent-gold: oklch(75% 0.15 80);
+  --color-whatsapp: oklch(55% 0.18 150);
+
+  /* Tipografía */
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  /* 3. ESPACIADO (Ajustado para coincidir con 'px-space-md' del Layout) */
+  /* Tailwind v4 usa el nombre de la variable para crear la clase. 
+     Ej: --spacing-space-md genera la clase .p-space-md */
+  --spacing-space-xs: 0.25rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-space-md: 1rem;
+  --spacing-space-lg: 1.5rem;
+  --spacing-space-xl: 2rem;
+}
+
+/* 4. CAPA BASE Y TRANSICIONES */
+@layer base {
+  :root {
+    background-color: var(--color-paper-base);
+    color: var(--color-ink-deep);
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-serif);
+    color: var(--color-brand-ink);
+    text-wrap: balance;
+  }
+}
+
+/* 5. VIEW TRANSITIONS (Crucial para el efecto de la portada "voladora") */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(book-cover),
+::view-transition-new(book-cover) {
+  animation-duration: 0.4s;
+  animation-timing-function: ease-in-out;
+}
+
+/* Accesibilidad: Reducción de movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

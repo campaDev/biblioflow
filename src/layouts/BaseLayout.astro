@@ -1,0 +1,104 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import SEO from '@ui/SEO.astro';
+import { siteInfo } from '@data/site-info';
+import '@styles/global.css';
+import CartButton from '@islands/CartButton.svelte';
+import CartDrawer from '@islands/CartDrawer.svelte';
+import Search from '@islands/Search.svelte';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  type?: 'website' | 'book';
+  noindex?: boolean;
+}
+
+const { title, description, image, type, noindex } = Astro.props;
+---
+
+<!doctype html>
+<html lang={siteInfo.localization.locale.split('-')[0]}>
+  <head>
+    <SEO 
+      title={title} 
+      description={description} 
+      image={image} 
+      type={type}
+      noindex={noindex} 
+    />
+    <ClientRouter />
+  </head>
+  <body class="bg-paper-base text-ink-deep antialiased selection:bg-accent-gold/30 selection:text-ink-deep">
+    
+    <a 
+      href="#main-content" 
+      class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-accent-gold focus:text-ink-deep focus:px-4 focus:py-2 focus:rounded-sm focus:outline-none"
+    >
+      Saltar al contenido principal
+    </a>
+
+    <div class="flex flex-col min-h-screen">
+      <header class="sticky top-0 z-40 w-full bg-paper-base/80 backdrop-blur-md border-b border-paper-dark transition-all duration-300">
+        <nav class="container mx-auto px-space-md h-16 flex justify-between items-center">
+          <a href="/" class="text-2xl font-serif font-bold text-brand-ink hover:opacity-80 transition-opacity">
+            {siteInfo.name}
+          </a>
+         <div class="flex items-center gap-space-md">
+            <div class="hidden md:block w-64"> <Search client:idle />
+            </div>
+
+            <slot name="header-actions" />
+    
+            <CartButton client:only="svelte" />
+          </div> 
+        </nav>
+      </header>
+      <main 
+        id="main-content" 
+        class="grow container mx-auto px-space-md focus:outline-none" 
+        tabindex="-1"
+      >
+        <slot />
+      </main>
+
+      <footer class="py-space-xl bg-paper-dark mt-auto border-t border-ink-deep/5">
+        <div class="container mx-auto px-space-md grid grid-cols-1 md:grid-cols-3 gap-space-lg">
+          <div>
+            <p class="font-serif text-xl text-brand-ink mb-space-sm">{siteInfo.name}</p>
+            <p class="text-sm opacity-80 leading-relaxed">{siteInfo.description}</p>
+          </div>
+          <div>
+            <h4 class="font-bold text-sm uppercase tracking-wider mb-space-md">Contacto</h4>
+            <ul class="text-sm space-y-2 opacity-80">
+              <li>{siteInfo.contact.address}</li>
+              <li>{siteInfo.contact.phone}</li>
+              <li>{siteInfo.contact.email}</li>
+            </ul>
+          </div>
+          <div class="md:text-right">
+            <p class="text-sm opacity-60">
+              &copy; {new Date().getFullYear()} Biblioflow.<br/>
+              Hecho en {siteInfo.geo.placename}.
+            </p>
+          </div>
+        </div>
+      </footer>
+    </div>
+    <CartDrawer client:only="svelte" />
+    <style is:global>
+      /* Layout utilities */
+      .container {
+        @apply max-w-[1280px] mx-auto;
+      }
+
+      /* Suavizado de bordes para fuentes locales */
+      body {
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+    </style>
+  </body>
+</html>

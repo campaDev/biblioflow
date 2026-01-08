@@ -1,0 +1,114 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import BookCover from '@components/BookCover.astro';
+import { supabase } from '@lib/supabase';
+// [NUEVO] Importamos el componente de servidor
+import PriceStatus from '@components/server/PriceStatus.astro';
+
+// 1. Generación de Rutas Estáticas (SSG) - SE MANTIENE IGUAL
+export async function getStaticPaths() {
+  const { data } = await supabase
+    .from('products')
+    .select('slug')
+    .eq('status', 'active');
+  return data?.map((product) => ({
+    params: { slug: product.slug },
+  })) || [];
+}
+
+// 2. Obtención de Datos ESTÁTICOS (Para SEO y Shell)
+// Ya no necesitamos traer 'stock_qty' aquí obligatoriamente para la UI, 
+// pero sirve tenerlo para el Schema.org inicial si quisieras.
+const { slug } = Astro.params;
+const { data: book, error } = await supabase
+  .from('products')
+  .select(`*, categories (name, slug)`)
+  .eq('slug', slug)
+  .single();
+
+if (!book || error) {
+  return Astro.redirect('/404');
+}
+---
+
+<BaseLayout 
+  title={book.title} 
+  description={book.description || `Compra ${book.title} de ${book.author} en BiblioFlow.`}
+  image={book.cover_image || "/og-image-default.webp"}
+  type="book"
+>
+  
+  <article class="py-8 md:py-12 animate-fade-in">
+    <nav class="flex items-center gap-4 text-sm text-brand-ink/50 mb-8 font-medium animate-fade-in">
+        <a href="/" class="group inline-flex items-center gap-1.5 hover:text-brand-ink transition-colors pr-4 border-r border-brand-ink/10" onclick="if(history.length > 1) { event.preventDefault(); history.back(); }">
+            <span class="text-xs">←</span> Volver
+         </a>
+         <span class="text-brand-ink truncate max-w-50 font-bold">{book.title}</span>
+    </nav>
+
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12">
+      
+      <div class="md:col-span-5 lg:col-span-4">
+        <div 
+          class="sticky top-24 rounded-sm shadow-xl overflow-hidden bg-paper-dark"
+          style={`view-transition-name: book-${book.slug}`}
+        >
+            <BookCover 
+                src={book.cover_image} 
+                alt={`Portada de ${book.title}`} 
+                title={book.title}
+                className="w-full h-auto aspect-2/3"
+            />
+        </div>
+      </div>
+
+      <div class="md:col-span-7 lg:col-span-8 flex flex-col h-full">
+        
+        <header class="mb-6 border-b border-brand-ink/10 pb-6">
+          <h1 class="text-3xl md:text-5xl font-serif font-bold text-brand-ink mb-2 text-balance leading-tight">
+            {book.title}
+          </h1>
+          <p class="text-xl text-brand-ink/60 font-medium font-serif">
+            {book.author}
+          </p>
+        </header>
+
+        <PriceStatus 
+            server:defer
+            slug={book.slug}
+            staticData={{
+                title: book.title,
+                author: book.author,
+                cover_image: book.cover_image || ''
+            }}
+        >
+            <div slot="fallback" class="animate-pulse mb-10">
+                <div class="h-10 w-48 bg-brand-ink/10 rounded mb-4"></div> <div class="flex gap-4">
+                    <div class="h-14 flex-1 bg-brand-ink/10 rounded"></div> <div class="h-14 flex-1 bg-brand-ink/5 rounded border border-brand-ink/10"></div>
+                </div>
+            </div>
+        </PriceStatus>
+
+        <div class="prose prose-lg prose-headings:font-serif prose-p:text-brand-ink/80 text-brand-ink/80 max-w-none mb-10">
+            <h3 class="font-bold text-brand-ink">Sinopsis</h3>
+            <p>{book.description || "Sin descripción disponible."}</p>
+        </div>
+
+        {book.specs && Object.keys(book.specs).length > 0 && (
+            <div class="bg-paper-surface p-6 rounded-sm border border-brand-ink/5">
+                <h3 class="font-bold font-serif text-lg mb-4 text-brand-ink">Ficha Técnica</h3>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                    {Object.entries(book.specs).map(([key, value]) => (
+                        <div class="flex flex-col border-b border-brand-ink/5 pb-2 last:border-0 sm:border-0 sm:pb-0">
+                            <dt class="font-bold text-brand-ink/50 capitalize">{key.replace('_', ' ')}</dt>
+                            <dd class="font-medium text-brand-ink">{String(value)}</dd>
+                        </div>
+                    ))}
+                </dl>
+            </div>
+        )}
+
+      </div>
+    </div>
+  </article>
+</BaseLayout>

@@ -1,0 +1,24 @@
+{
+  "name": "",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/node": "^9.5.1",
+    "@astrojs/sitemap": "^3.6.1",
+    "@astrojs/svelte": "^7.2.5",
+    "@nanostores/persistent": "^1.2.0",
+    "@supabase/supabase-js": "^2.90.0",
+    "@tailwindcss/vite": "^4.1.18",
+    "astro": "^5.16.7",
+    "nanostores": "^1.1.0",
+    "svelte": "^5.46.1",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,86 @@
+---
+export const prerender = false;
+import BaseLayout from '@layouts/BaseLayout.astro';
+import AdminPanel from '@islands/admin/AdminPanel.svelte';
+import { supabase } from '@lib/supabase';
+
+// 1. Protección de Ruta (SSR)
+const accessToken = Astro.cookies.get("sb-access-token")?.value;
+const refreshToken = Astro.cookies.get("sb-refresh-token")?.value;
+
+if (!accessToken || !refreshToken) {
+  return Astro.redirect("/admin/login");
+}
+
+// Seteamos la sesión para verificar validez
+const { data: { session }, error } = await supabase.auth.setSession({
+  access_token: accessToken,
+  refresh_token: refreshToken,
+});
+
+if (error || !session) {
+  return Astro.redirect("/admin/login");
+}
+
+// 2. Data Fetching
+
+// A. Pedidos recientes
+const { data: orders } = await supabase
+  .from('orders_leads')
+  .select('*')
+  .order('created_at', { ascending: false })
+  .limit(50);
+
+// B. Inventario completo [CORREGIDO]
+// - Usamos select('*') para traer description, images, language, etc. para el Modal de Edición.
+// - Quitamos .eq('status', 'active') para que el admin pueda ver borradores y archivados.
+const { data: products } = await supabase
+  .from('products')
+  .select('*') 
+  .order('created_at', { ascending: false }); // Ordenar por fecha ayuda a ver lo último que cargaste
+
+// C. Categorías (para el selector)
+const { data: categories } = await supabase
+  .from('categories')
+  .select('id, name')
+  .order('name');
+---
+
+<BaseLayout title="Panel de Control | Admin" noindex={true}>
+  <div class="bg-paper-surface min-h-screen pb-20">
+    <header class="bg-brand-ink text-white py-4 px-6 shadow-md flex justify-between items-center">
+      <h1 class="font-serif font-bold text-xl">BiblioFlow Admin</h1>
+      <div class="flex items-center gap-4 text-sm">
+        <span class="opacity-80">{session.user.email}</span>
+        <button 
+          id="logout-btn"
+          class="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-sm transition-colors cursor-pointer"
+        >
+          Cerrar Sesión
+        </button>
+      </div>
+    </header>
+
+    <main class="container mx-auto px-space-md py-8">
+      <AdminPanel 
+        client:only="svelte" 
+        initialOrders={orders || []} 
+        initialProducts={products || []} 
+        categories={categories || []}
+      />
+    </main>
+  </div>
+
+  <script>
+    import { supabase } from '@lib/supabase';
+    
+    // Lógica de Logout
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      // Limpiar cookies
+      document.cookie = "sb-access-token=; path=/; max-age=0;";
+      document.cookie = "sb-refresh-token=; path=/; max-age=0;";
+      window.location.href = "/admin/login";
+    });
+  </script>
+</BaseLayout>

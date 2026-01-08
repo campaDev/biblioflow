@@ -1,0 +1,5 @@
+User-agent: *
+    Allow: /
+    Disallow: /admin/
+    
+    Sitemap: https://biblioflow.com.py/sitemap-index.xml

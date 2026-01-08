@@ -1,0 +1,103 @@
+---
+import { siteInfo } from '@data/site-info';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  canonicalURL?: URL;
+  type?: 'website' | 'book';
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = siteInfo.description,
+  image = "/og-image-default.webp",
+  canonicalURL = new URL(Astro.url.pathname, Astro.site),
+  type = "website",
+  noindex = false
+} = Astro.props;
+
+// Construcción del título final: "Título de Página | Biblioflow"
+const formattedTitle = title 
+  ? `${title} | ${siteInfo.name}` 
+  : `${siteInfo.name} | Tu librería de alto rendimiento`;
+
+// JSON-LD Dinámico para Biblioflow
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": type === 'book' ? 'Book' : 'BookStore',
+  "name": siteInfo.name,
+  "description": description,
+  "url": siteInfo.url,
+  "image": new URL(image, Astro.url).toString(),
+  "address": {
+    "@type": "PostalAddress",
+    "addressCountry": siteInfo.geo.region,
+    "addressLocality": siteInfo.geo.placename
+  },
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": siteInfo.contact.phone,
+    "contactType": "customer service"
+  }
+};
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<meta name="generator" content={Astro.generator} />
+
+{noindex && <meta name="robots" content="noindex,nofollow" />}
+
+<link rel="canonical" href={canonicalURL} />
+
+<title>{formattedTitle}</title>
+<meta name="title" content={formattedTitle} />
+<meta name="description" content={description} />
+
+<meta property="og:type" content={type} />
+<meta property="og:url" content={Astro.url} />
+<meta property="og:title" content={formattedTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={new URL(image, Astro.url)} />
+<meta property="og:site_name" content={siteInfo.name} />
+
+<meta property="twitter:card" content="summary_large_image" />
+<meta property="twitter:url" content={Astro.url} />
+<meta property="twitter:title" content={formattedTitle} />
+<meta property="twitter:description" content={description} />
+<meta property="twitter:image" content={new URL(image, Astro.url)} />
+
+<meta name="geo.region" content={siteInfo.geo.region} />
+<meta name="geo.placename" content={siteInfo.geo.placename} />
+<meta name="geo.position" content={`${siteInfo.geo.latitude};${siteInfo.geo.longitude}`} />
+<meta name="ICBM" content={`${siteInfo.geo.latitude}, ${siteInfo.geo.longitude}`} />
+
+<link 
+  rel="preload" 
+  href="/fonts/playfair-700.woff2" 
+  as="font" 
+  type="font/woff2" 
+  crossorigin="anonymous" 
+/>
+<link 
+    rel="preload" 
+    href="/fonts/playfair-600.woff2" 
+    as="font" 
+    type="font/woff2" 
+    crossorigin="anonymous" 
+  />
+<link 
+  rel="preload" 
+  href="/fonts/InterVariable.woff2" 
+  as="font" 
+  type="font/woff2" 
+  crossorigin="anonymous" 
+/>
+
+<link rel="sitemap" href="/sitemap-index.xml" />
+
+<script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />

@@ -1,0 +1,51 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import HomeCatalog from '@islands/HomeCatalog.svelte'; // Importamos la Isla
+import { supabase } from '@lib/supabase';
+
+// 1. Data Fetching
+// Traemos productos activos con sus campos necesarios
+const { data: products } = await supabase
+  .from('products')
+  .select('id, title, author, price, promotional_price, slug, cover_image, category_id')
+  .eq('status', 'active')
+  .order('created_at', { ascending: false });
+
+// Traemos categorías que tengan al menos 1 producto (Opcional: traer todas)
+const { data: categories } = await supabase
+  .from('categories')
+  .select('id, name')
+  .order('name');
+
+// Filtramos categorías vacías si quieres ser muy estricto, o las pasamos todas
+// Por simplicidad, pasamos todas las categorías encontradas.
+---
+
+<BaseLayout title="Inicio">
+  
+  <section class="py-12 md:py-20 text-center space-y-6">
+    <h1 class="text-4xl md:text-6xl font-serif font-bold text-brand-ink leading-tight">
+      Lecturas que <span class="text-accent-gold">transforman</span>.
+    </h1>
+    <p class="text-lg md:text-xl text-brand-ink/60 max-w-2xl mx-auto text-balance">
+      Una selección curada de libros técnicos, espirituales y narrativos para mentes inquietas.
+    </p>
+  </section>
+
+  <section class="pb-20">
+    <div class="flex items-end justify-between mb-8 px-2">
+      <h2 class="text-2xl font-serif font-bold text-brand-ink">Explorar Colección</h2>
+      <a href="/libros" class="hidden sm:block text-sm font-medium text-brand-ink/60 hover:text-accent-gold transition-colors">
+        Ver catálogo completo &rarr;
+      </a>
+    </div>
+
+    <HomeCatalog 
+      client:load 
+      products={products || []} 
+      categories={categories || []} 
+    />
+
+  </section>
+
+</BaseLayout>

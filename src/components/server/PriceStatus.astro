@@ -1,0 +1,94 @@
+---
+import { supabase } from "@lib/supabase";
+import { formatPrice } from "@utils/formatting";
+import AddButton from "@islands/AddButton.svelte";
+
+interface Props {
+  slug: string;
+  staticData: {
+    title: string;
+    cover_image: string;
+    author: string;
+  };
+}
+
+const { slug, staticData } = Astro.props;
+
+// 1. FETCH EN TIEMPO REAL
+const { data: product } = await supabase
+  .from("products")
+  .select("id, price, promotional_price, stock_qty")
+  .eq("slug", slug)
+  .single();
+
+if (!product) {
+  throw new Error("Producto no encontrado en tiempo real");
+}
+
+// 2. Recalcular Lógica de Precios
+const hasDiscount =
+  product.promotional_price && product.promotional_price < product.price;
+
+const discountPercentage = hasDiscount
+  ? Math.round((1 - product.promotional_price / product.price) * 100)
+  : 0;
+
+const finalPrice = hasDiscount ? product.promotional_price : product.price;
+---
+
+<div class="animate-fade-in">
+  <div class="mb-8">
+    <div class="flex items-baseline gap-4">
+      <span class="text-4xl font-bold text-brand-ink tracking-tight">
+        {formatPrice(finalPrice)}
+      </span>
+      {/* SINTAXIS ASTRO: Condicional simple con && */}
+      {hasDiscount && (
+        <span class="text-xl text-brand-ink/40 line-through decoration-1">
+          {formatPrice(product.price)}
+        </span>
+      )}
+    </div>
+
+    {hasDiscount && (
+      <div
+        class="inline-block mt-2 bg-accent-gold/20 text-brand-ink px-3 py-1 rounded-full text-sm font-bold border border-accent-gold/50"
+      >
+        Ahorras {discountPercentage}% OFF
+      </div>
+    )}
+  </div>
+
+  <div class="flex flex-col sm:flex-row gap-4 mb-10">
+    {/* SINTAXIS ASTRO: Ternario (Condición ? Verdadero : Falso) */}
+    {product.stock_qty > 0 ? (
+      <AddButton
+        client:visible
+        product={{
+          id: product.id,
+          slug: slug,
+          title: staticData.title,
+          price: finalPrice,
+          cover_image: staticData.cover_image,
+          stock_qty: product.stock_qty,
+        }}
+      />
+    ) : (
+      <button
+        disabled
+        class="flex-1 bg-gray-200 text-gray-500 font-bold py-4 px-8 rounded-sm cursor-not-allowed border border-gray-300"
+      >
+        Agotado Temporalmente
+      </button>
+    )}
+
+    <a
+      href={`https://wa.me/595981123456?text=Hola, me interesa el libro "${staticData.title}"`}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="flex-1 border-2 border-brand-ink text-brand-ink font-bold py-4 px-8 rounded-sm hover:bg-brand-ink/5 transition-colors text-center flex items-center justify-center gap-2"
+    >
+      <span>Consultar por WhatsApp</span>
+    </a>
+  </div>
+</div>

@@ -1,0 +1,53 @@
+---
+interface Props {
+  src?: string | null;
+  alt: string;
+  title: string;
+  className?: string;
+}
+
+const { src, alt, title, className = "" } = Astro.props;
+
+// Generamos un color pseudo-aleatorio basado en el título para el fallback
+const hash = title.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+const hue = hash % 360;
+// Interpolamos la variable hue dentro del string template correctamente
+const fallbackStyle = `background: linear-gradient(135deg, oklch(60% 0.15 ${hue}) 0%, oklch(30% 0.10 ${hue}) 100%);`;
+---
+
+<div class={`relative aspect-2/3 overflow-hidden rounded-sm shadow-sm ${className}`}>
+  {src ? (
+    <>
+      <img 
+        src={src} 
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        class="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+      />
+      {/* Fallback oculto que se muestra si img falla (onerror) */}
+      <div 
+        class="hidden absolute inset-0 flex-col justify-center items-center p-4 text-center text-white" 
+        style={fallbackStyle}
+      >
+        <span class="font-serif font-bold text-lg leading-tight line-clamp-3">
+          {title}
+        </span>
+        <span class="mt-2 text-xs opacity-80 font-sans tracking-widest uppercase">
+          BiblioFlow
+        </span>
+      </div>
+    </>
+  ) : (
+    /* Renderizado directo del fallback si no viene SRC */
+    <div 
+      class="absolute inset-0 flex flex-col justify-center items-center p-4 text-center text-white h-full w-full" 
+      style={fallbackStyle}
+    >
+      <span class="font-serif font-bold text-lg leading-tight text-balance">
+        {title}
+      </span>
+    </div>
+  )}
+</div>
