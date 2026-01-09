@@ -8,7 +8,7 @@ export const siteInfo = {
     email: "hola@biblioflow.com.py",
     phone: "+595981123456",
     whatsapp: "595981123456",
-    address: "Asunción, Paraguay",
+    address: "Bella Vista, Paraguay",
     googleMapsLink: "https://maps.google.com/...", // Útil para el Footer
   },
 
@@ -35,7 +35,7 @@ export const siteInfo = {
 
   geo: {
     region: "PY",
-    placename: "Asunción",
+    placename: "Bella Vista",
     latitude: -25.2867,
     longitude: -57.647,
   },
