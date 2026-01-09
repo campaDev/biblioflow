@@ -235,7 +235,7 @@ export const server = {
       return { success: true, id };
     },
   }),
-  // [NUEVO] ACCIÓN 6: ACTUALIZAR ESTADO DEL PEDIDO
+  // ACCIÓN 6: ACTUALIZAR ESTADO DEL PEDIDO
 
   updateOrderStatus: defineAction({
     accept: "json",
@@ -270,6 +270,32 @@ export const server = {
       }
 
       return data;
+    },
+  }),
+
+  // ACCION 7: SOLICITUD DE RE-STOCK (AVÍSAME CUANDO VUELVA)
+  requestRestock: defineAction({
+    accept: "json",
+    input: z.object({
+      productId: z.number(),
+      contact: z.string().min(5, "El contacto es muy corto"), // Email o Teléfono
+    }),
+    handler: async ({ productId, contact }) => {
+      // 1. Guardar en la tabla 'restock_requests'
+      const { error } = await supabase.from("restock_requests").insert({
+        product_id: productId,
+        customer_contact: contact,
+      });
+
+      if (error) {
+        console.error("Error guardando lead:", error);
+        throw new Error("No pudimos guardar tu solicitud. Intenta de nuevo.");
+      }
+
+      return {
+        success: true,
+        message: "¡Anotado! Te avisaremos si conseguimos otro ejemplar.",
+      };
     },
   }),
 };

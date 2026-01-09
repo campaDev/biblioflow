@@ -2,6 +2,7 @@
 export const prerender = false;
 import BaseLayout from '@layouts/BaseLayout.astro';
 import AdminPanel from '@islands/admin/AdminPanel.svelte';
+import AdminStats from '@islands/admin/AdminStats.svelte';
 import { supabase } from '@lib/supabase';
 
 // 1. Protección de Ruta (SSR)
@@ -44,6 +45,43 @@ const { data: categories } = await supabase
   .from('categories')
   .select('id, name')
   .order('name');
+
+// D. Estadísticas (Traemos datos ligeros para calcular KPIs)
+// Traemos solo status y monto de TODOS los pedidos (o del último mes)
+const { data: allOrdersStats } = await supabase
+  .from('orders_leads')
+  .select('status, total_amount');
+
+// E. Cálculo de Métricas (Business Intelligence Lite)
+const stats = {
+  totalLeads: 0,
+  closedSales: 0,
+  totalRevenue: 0,
+  conversionRate: 0
+};
+
+if (allOrdersStats) {
+  stats.totalLeads = allOrdersStats.length;
+  
+  // Filtramos solo los que son dinero real (Confirmados o Completados)
+  const closedOrders = allOrdersStats.filter(o => 
+    o.status === 'confirmed' || 
+    o.status === 'pending_shipment' || 
+    o.status === 'ready_for_pickup' || 
+    o.status === 'completed'
+  );
+
+  stats.closedSales = closedOrders.length;
+  
+  // Sumamos la plata
+  stats.totalRevenue = closedOrders.reduce((sum, order) => sum + order.total_amount, 0);
+
+  // Calculamos porcentaje (evitando división por cero)
+  stats.conversionRate = stats.totalLeads > 0 
+    ? Math.round((stats.closedSales / stats.totalLeads) * 100) 
+    : 0;
+}
+
 ---
 
 <BaseLayout title="Panel de Control | Admin" noindex={true}>
@@ -62,6 +100,7 @@ const { data: categories } = await supabase
     </header>
 
     <main class="container mx-auto px-space-md py-8">
+      <AdminStats stats={stats} />
       <AdminPanel 
         client:only="svelte" 
         initialOrders={orders || []} 

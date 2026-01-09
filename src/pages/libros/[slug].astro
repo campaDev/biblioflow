@@ -2,10 +2,10 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 import BookCover from '@components/BookCover.astro';
 import { supabase } from '@lib/supabase';
-// [NUEVO] Importamos el componente de servidor
+import RestockForm from '@islands/RestockForm.svelte';
 import PriceStatus from '@components/server/PriceStatus.astro';
 
-// 1. Generación de Rutas Estáticas (SSG) - SE MANTIENE IGUAL
+// 1. Generación de Rutas Estáticas (SSG)
 export async function getStaticPaths() {
   const { data } = await supabase
     .from('products')
@@ -16,9 +16,7 @@ export async function getStaticPaths() {
   })) || [];
 }
 
-// 2. Obtención de Datos ESTÁTICOS (Para SEO y Shell)
-// Ya no necesitamos traer 'stock_qty' aquí obligatoriamente para la UI, 
-// pero sirve tenerlo para el Schema.org inicial si quisieras.
+// 2. Obtención de Datos
 const { slug } = Astro.params;
 const { data: book, error } = await supabase
   .from('products')
@@ -29,6 +27,11 @@ const { data: book, error } = await supabase
 if (!book || error) {
   return Astro.redirect('/404');
 }
+
+// Lógica de disponibilidad para Google (SEO)
+const schemaAvailability = book.stock_qty > 0 
+  ? "https://schema.org/InStock" 
+  : "https://schema.org/OutOfStock";
 ---
 
 <BaseLayout 
@@ -38,6 +41,20 @@ if (!book || error) {
   type="book"
 >
   
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": book.title,
+    "image": book.cover_image,
+    "description": book.description || `Libro ${book.title} por ${book.author}`,
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "PYG",
+      "price": book.price,
+      "availability": schemaAvailability
+    }
+  })} />
+
   <article class="py-8 md:py-12 animate-fade-in">
     <nav class="flex items-center gap-4 text-sm text-brand-ink/50 mb-8 font-medium animate-fade-in">
         <a href="/" class="group inline-flex items-center gap-1.5 hover:text-brand-ink transition-colors pr-4 border-r border-brand-ink/10" onclick="if(history.length > 1) { event.preventDefault(); history.back(); }">
@@ -73,21 +90,29 @@ if (!book || error) {
           </p>
         </header>
 
-        <PriceStatus 
-            server:defer
-            slug={book.slug}
-            staticData={{
-                title: book.title,
-                author: book.author,
-                cover_image: book.cover_image || ''
-            }}
-        >
-            <div slot="fallback" class="animate-pulse mb-10">
-                <div class="h-10 w-48 bg-brand-ink/10 rounded mb-4"></div> <div class="flex gap-4">
-                    <div class="h-14 flex-1 bg-brand-ink/10 rounded"></div> <div class="h-14 flex-1 bg-brand-ink/5 rounded border border-brand-ink/10"></div>
+        {book.stock_qty > 0 ? (
+            /* CASO 1: DISPONIBLE -> Botón de Compra */
+            <PriceStatus 
+                server:defer
+                slug={book.slug}
+                staticData={{
+                    title: book.title,
+                    author: book.author,
+                    cover_image: book.cover_image || ''
+                }}
+            >
+                <div slot="fallback" class="animate-pulse mb-10">
+                    <div class="h-10 w-48 bg-brand-ink/10 rounded mb-4"></div> 
+                    <div class="flex gap-4">
+                        <div class="h-14 flex-1 bg-brand-ink/10 rounded"></div> 
+                        <div class="h-14 flex-1 bg-brand-ink/5 rounded border border-brand-ink/10"></div>
+                    </div>
                 </div>
-            </div>
-        </PriceStatus>
+            </PriceStatus>
+        ) : (
+            /* CASO 2: AGOTADO -> Formulario de Lista de Espera */
+            <RestockForm client:visible productId={book.id} />
+        )}
 
         <div class="prose prose-lg prose-headings:font-serif prose-p:text-brand-ink/80 text-brand-ink/80 max-w-none mb-10">
             <h3 class="font-bold text-brand-ink">Sinopsis</h3>
